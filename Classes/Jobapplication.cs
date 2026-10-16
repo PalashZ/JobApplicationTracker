@@ -32,8 +32,8 @@ namespace JobApplicationTracker.Classes
             PositionTitle = positionTitle;
             SalaryExpectation = salaryExpectation;
             ApplicationDate = applicationDate;
-            ResponseDate = responseDate;
-            Status = Status;
+            ResponseDate = null;
+            Status = ApplicationStatus.Applied;
 
         }
 
