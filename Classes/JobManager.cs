@@ -50,7 +50,7 @@ public class JobManager
             return;
         }
 
-        Applications.Add(new JobApplication(companyName, positionTitle, salaryExpectation, applicationDate,null, default));
+        Applications.Add(new JobApplication(companyName, positionTitle, salaryExpectation, applicationDate,null,ApplicationStatus.Applied));
         Console.WriteLine("Application added.");
     }
 
@@ -111,9 +111,11 @@ public class JobManager
         // Numbered from 1 so the user can pick an application
         for (int i = 0; i < Applications.Count; i++)
         {
-            Console.WriteLine($"{i + 1}. {Applications[i].GetSummary()}");
+            PrintApplication(Applications[i], $"{i + 1}. ");
         }
     }
+    // This method removes an application from the list. It first checks if there are any applications, then shows all applications and asks the user to enter the number of the application to remove.
+    // It validates the input and removes the selected application from the list.
     public void RemoveJob()
     {
         if (Applications.Count == 0)
@@ -122,6 +124,7 @@ public class JobManager
             return;
         }
 
+       // ShowAll() applications before asking which one to remove
         ShowAll();
 
         Console.Write("Number of the application to remove: ");
@@ -135,4 +138,128 @@ public class JobManager
         Console.WriteLine("Application removed.");
 
     }
+
+    // This method shows the applications filtered by status. I have now implemented it using LINQ, which is a way to query collections in C#.
+    // Shows only the applications with a status chosen by the user(LINQ Where).
+    public void ShowByStatus()
+    {
+        if (Applications.Count == 0)
+        {
+            Console.WriteLine("There are no applications.");
+            return;
+        }
+
+        // Enum.GetNames lists all statuses, and Enum.TryParse turns the text into a status
+        // Same as in UpdateStatus, but here we don't change the status, we just filter the list
+        Console.Write($"Show status ({string.Join(", ", Enum.GetNames<ApplicationStatus>())}): ");
+        if (!Enum.TryParse(Console.ReadLine(), true, out ApplicationStatus selectedStatus) || !Enum.IsDefined(selectedStatus))
+        {
+            Console.WriteLine("Invalid status.");
+            return;
+        }
+
+        // Where keeps only the applications with the selected status
+        // a is one application that LINQ looks at, and ToList collects the result in a new list
+        var filteredApplications = Applications.Where(a => a.Status == selectedStatus).ToList();
+
+        if (filteredApplications.Count == 0)
+        {
+            Console.WriteLine($"There are no applications with status {selectedStatus}.");
+            return;
+        }
+
+        foreach (JobApplication application in filteredApplications)
+        {
+            PrintApplication(application);
+        }
+    }
+    // This method shows the applications sorted by application date, oldest first.
+    // Shows all applications sorted by application date (LINQ OrderBy).
+    public void ShowSortedByDate()
+    {
+        if (Applications.Count == 0)
+        {
+            Console.WriteLine("There are no applications.");
+            return;
+        }
+
+        // OrderBy sorts by application date, oldest first
+        var sortedApplications = Applications.OrderBy(a => a.ApplicationDate).ToList();
+
+        foreach (JobApplication application in sortedApplications)
+        {
+            PrintApplication(application);
+        }
+    }
+
+    // This method shows the applications that have not received a response and were sent more than 14 days ago.
+    // By using LINQ, it filters the applications to find those that have no response date and were sent more than 14 days ago.
+    public void ShowUnansweredOlderThan14Days()
+    {
+        // No response date AND sent more than 14 days ago
+        var unansweredApplications = Applications
+            .Where(a => a.ResponseDate == null && a.GetDaysSinceApplied() > 14)
+            .ToList();
+
+        if (unansweredApplications.Count == 0)
+        {
+            Console.WriteLine("No unanswered applications are older than 14 days.");
+            return;
+        }
+
+        foreach (JobApplication application in unansweredApplications)
+        {
+            PrintApplication(application);
+        }
+    }
+    // This method shows statistics about the applications, such as total number, number of each status, and average response time.
+    // Shows the total number, the number per status and the average response time, used (LINQ Count And Average).
+    public void ShowStatistics()
+    {
+        if (Applications.Count == 0)
+        {
+            Console.WriteLine("There are no applications to show statistics for.");
+            return;
+        }
+
+        Console.WriteLine($"Total applications: {Applications.Count}");
+
+        // Enum.GetValues gives all statuses, and Count counts the ones that match
+        foreach (ApplicationStatus status in Enum.GetValues<ApplicationStatus>())
+        {
+            int count = Applications.Count(a => a.Status == status);
+            Console.WriteLine($"{status}: {count}");
+        }
+
+        // Only applications with a response date can have a response time
+        var respondedApplications = Applications.Where(a => a.ResponseDate != null).ToList();
+
+        if (respondedApplications.Count == 0)
+        {
+            Console.WriteLine("Average response time: no responses registered yet.");
+            return;
+        }
+
+        // Value gets the date out of DateTime?, TotalDays gives the difference in days
+        double averageResponseTime = respondedApplications
+            .Average(a => (a.ResponseDate!.Value.Date - a.ApplicationDate.Date).TotalDays);
+
+        Console.WriteLine($"Average response time: {averageResponseTime:F1} days");
+    }
+    // This method prints the application summary with a color based on the status.
+    // implemented it using a switch expression, which is a more concise way to write conditional logic in C#.
+    private void PrintApplication(JobApplication application, string prefix = "- ")
+    {
+        Console.ForegroundColor = application.Status switch
+        {
+            ApplicationStatus.Offer => ConsoleColor.Green,
+            ApplicationStatus.Rejected => ConsoleColor.Red,
+            ApplicationStatus.Interview => ConsoleColor.Yellow,
+            _ => ConsoleColor.Cyan
+        };
+
+        Console.WriteLine(prefix + application.GetSummary());
+        Console.ResetColor();
+    }
+
 }
