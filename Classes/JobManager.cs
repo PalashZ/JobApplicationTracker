@@ -159,8 +159,8 @@ public class JobManager
         }
 
         // Where keeps only the applications with the selected status
-        // a is one application that LINQ looks at, and ToList collects the result in a new list
-        var filteredApplications = Applications.Where(a => a.Status == selectedStatus).ToList();
+        // job is one application that LINQ looks at, and ToList collects the result in a new list
+        var filteredApplications = Applications.Where(job => job.Status == selectedStatus).ToList();
 
         if (filteredApplications.Count == 0)
         {
@@ -184,7 +184,7 @@ public class JobManager
         }
 
         // OrderBy sorts by application date, oldest first
-        var sortedApplications = Applications.OrderBy(a => a.ApplicationDate).ToList();
+        var sortedApplications = Applications.OrderBy(job => job.ApplicationDate).ToList();
 
         foreach (JobApplication application in sortedApplications)
         {
@@ -198,7 +198,7 @@ public class JobManager
     {
         // No response date AND sent more than 14 days ago
         var unansweredApplications = Applications
-            .Where(a => a.ResponseDate == null && a.GetDaysSinceApplied() > 14)
+            .Where(job => job.ResponseDate == null && job.GetDaysSinceApplied() > 14)
             .ToList();
 
         if (unansweredApplications.Count == 0)
@@ -227,12 +227,12 @@ public class JobManager
         // Enum.GetValues gives all statuses, and Count counts the ones that match
         foreach (ApplicationStatus status in Enum.GetValues<ApplicationStatus>())
         {
-            int count = Applications.Count(a => a.Status == status);
+            int count = Applications.Count(job => job.Status == status);
             Console.WriteLine($"{status}: {count}");
         }
 
         // Only applications with a response date can have a response time
-        var respondedApplications = Applications.Where(a => a.ResponseDate != null).ToList();
+        var respondedApplications = Applications.Where(job => job.ResponseDate != null).ToList();
 
         if (respondedApplications.Count == 0)
         {
@@ -242,7 +242,7 @@ public class JobManager
 
         // Value gets the date out of DateTime?, TotalDays gives the difference in days
         double averageResponseTime = respondedApplications
-            .Average(a => (a.ResponseDate!.Value.Date - a.ApplicationDate.Date).TotalDays);
+            .Average(job => (job.ResponseDate!.Value.Date - job.ApplicationDate.Date).TotalDays);
 
         Console.WriteLine($"Average response time: {averageResponseTime:F1} days");
     }
